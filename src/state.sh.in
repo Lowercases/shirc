@@ -290,7 +290,6 @@ shirc_init() {
     shirc_timestamp=$(date +%s)
 
     trap shirc_finalize EXIT
-    trap shirc_reload HUP
 
 }
 
