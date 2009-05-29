@@ -1,0 +1,314 @@
+#!/bin/bash
+
+#
+#   shirc -- IRC support for shell scripting
+#   Copyright (C) 2009  Ignacio Nin
+#
+#   This program is free software; you can redistribute it and/or modify
+#   it under the terms of the GNU General Public License as published by
+#   the Free Software Foundation; either version 2 of the License, or
+#   (at your option) any later version.
+#
+#   This program is distributed in the hope that it will be useful,
+#   but WITHOUT ANY WARRANTY; without even the implied warranty of
+#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#   GNU General Public License for more details.
+#
+#   You should have received a copy of the GNU General Public License
+#   along with this program; if not, write to the Free Software
+#   Foundation, Inc.,
+#   51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+#
+
+#
+# Shirc state, global variables.
+#
+
+# Nick and identity
+shirc_nick="shirc"
+shirc_secondary_nick=""
+shirc_username="shirc"
+shirc_realname="shirc"
+
+shirc_nickserv_password=""
+
+# Program name, for use in messages, etc.
+shirc_program_name="shirc"
+
+# Timestamp since we started
+shirc_timestamp=""
+
+# Server
+shirc_server=""
+shirc_port="6667"
+shirc_server_name="" # The name of the server is stored here.
+
+shirc_timeout="10"
+shirc_ping_timeout="10"
+shirc_async_wait="10"
+
+# Initial channels
+shirc_channels=""
+
+# Quit message
+shirc_quit_message="Shirc quitting"
+
+#
+# shirc_set_*
+#
+# This functions set the appropiate global variables
+#
+# Params:
+#   1 -- the program name
+#
+# Global variables:
+#   shirc_program_name
+#
+shirc_set_program_name() {
+    local program_name
+
+    program_name="$1"
+
+    shirc_program_name="$program_name"
+
+}
+
+#
+# shirc_set_nick()
+#
+# This function sets the nick to be used in the connection
+#
+# Params:
+#   1 -- the nick to use
+#   2 (optional) -- the secondary nick, in case first is taken
+#
+# Global variables:
+#   shirc_nick
+#   shirc_secondary_nick
+#
+shirc_set_nick() {
+    local nick secnick
+
+    nick="$1"
+    secnick="$2"
+
+    shirc_nick="$nick"
+
+    if test "x$secnick" != "x"
+    then
+        shirc_secondary_nick="$secnick"
+    fi
+
+    return 0
+
+}
+
+#
+# shirc_set_username()
+#
+# This function sets the username to use in IRC.
+#
+# Params:
+#   1 -- the username
+#
+# Global variables:
+#   shirc_username
+#
+shirc_set_username() {
+    local username
+
+    username="$1"
+
+    shirc_username="$username"
+
+    return 0
+
+}
+
+#
+# shirc_set_realname()
+#
+# This function sets the realname to use in IRC.
+#
+# Params:
+#   1 -- the realname
+#
+# Global variables:
+#   shirc_realname
+#
+shirc_set_realname() {
+    local realname
+
+    realname="$1"
+
+    shirc_realname="$realname"
+
+    return 0
+
+}
+
+#
+# shirc_set_nickserv_password()
+#
+# This function sets the password for registering with NickServ
+#
+# Params:
+#   1 -- the password
+#
+# Global variables:
+#   shirc_nickserv_password
+#
+shirc_set_nickserv_password() {
+    local password
+
+    password="$1"
+
+    shirc_nickserv_password="$password"
+
+    return 0
+
+}
+
+#
+# shirc_set_server()
+#
+# This function sets the server and port to connect to
+#
+# Params:
+#   1 -- the IRC server
+#   2 (optional) -- port to connect to
+#
+# Global variables:
+#   shirc_server
+#   shirc_port
+#
+shirc_set_server() {
+    local server port
+
+    server="$1"
+    port="$2"
+
+    shirc_server="$server"
+
+    if test "x$port" != "x"
+    then
+        shirc_port="$port"
+    fi
+
+    return 0
+
+}
+
+#
+# shirc_set_timeout()
+#
+# This function sets the timeouts of the connections
+#
+# Params:
+#   1 -- the intended timeout
+#   2 -- the ping timeout
+#
+# Global variables:
+#   shirc_timeout
+#
+shirc_set_timeout() {
+    local timeout ping_timeout
+
+    timeout="$1"
+    ping_timeout="$2"
+
+    shirc_timeout="$timeout"
+    shirc_ping_timeout="$ping_timeout"
+
+    return 0
+
+}
+
+#
+# shirc_set_channels()
+#
+# This function sets the initial set of channels to connect to
+#
+# Params:
+#   1..n -- the channels
+#
+# Global variables:
+#   shirc_channels
+#
+shirc_set_channels() {
+    shirc_channels="$@"
+
+    return 0
+
+}
+
+#
+# shirc_set_quit_message()
+#
+# This function sets the quit message to use when quitting
+#
+# Params:
+#   1 -- the quit message
+#
+# Global variables:
+#   shirc_quit_message
+#
+shirc_set_quit_message() {
+    local quit
+
+    quit="$1"
+
+    shirc_quit_message="$quit"
+
+    return 0
+
+}
+
+
+#
+# shirc_init()
+#
+# Initializes the shirc system, setting up the fifos.
+#
+# Params:
+#   none.
+#
+# Global variables:
+#   shirc_tmp_dir -- temporary directory for the FIFOs.
+#
+shirc_init() {
+    # Temporary directory creation
+    shirc_tmp_dir=$(mktemp -qd "/tmp/$shirc_program_name.XXXXXX")
+    if test $? != 0
+    then
+        shirc_fatal_error \
+            "Couldn't create temporary directory for FIFOs at initialize()"
+    fi
+
+    shirc_create_fifos
+
+    shirc_timestamp=$(date +%s)
+
+    trap shirc_finalize EXIT
+    trap shirc_reload HUP
+
+}
+
+
+# shirc_finalize()
+#
+# Deletes the temporary dir, and the FIFOs for communication.
+#
+# Parameters:
+#   none.
+#
+# Global variables:
+#   shirc_shirc_tmp_dir -- the temporary directory.
+#
+shirc_finalize() {
+    shirc_delete_fifos
+
+    # Delete temp dir
+    rm -rf $shirc_tmp_dir
+
+}
