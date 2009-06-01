@@ -311,3 +311,18 @@ shirc_finalize() {
     rm -rf $shirc_tmp_dir
 
 }
+
+# prog_uptime()
+#
+# Outputs the uptime (time since initial timestamp) in seconds
+#
+# Parameters:
+#   none.
+#
+# Global variables:
+#   timestamp -- initial timestamp
+#
+shirc_uptime() {
+    expr $(date +%s) - "$shirc_timestamp"
+
+}
