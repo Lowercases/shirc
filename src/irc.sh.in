@@ -304,6 +304,12 @@ shirc_irc_messageparser() {
         target=$(echo "$fmessage" | cut -d ' ' -f 3)
         message=$(echo "$fmessage" | cut -d ' ' -f 4- | sed 's/^://')
 
+        # Check the ignore list
+        if echo "$shirc_ignorelist" | fgrep -qwi "$source"
+        then
+            continue
+        fi
+
         $shirc_general_callback "$source" "$target" "$message"
 
     fi
@@ -556,9 +562,9 @@ shirc_get_names_list() {
 
     while read -r -t $shirc_timeout
     do
-        if shirc_is_numeric_message "$REPLY"
+        if shirc_irc_is_numeric_message "$REPLY"
         then
-            mn=$(shirc_print_message_number "$REPLY")
+            mn=$(shirc_irc_print_message_number "$REPLY")
             # Also test this is the channel
             if echo "$REPLY" | fgrep -qwi "$channel"
             then
@@ -638,9 +644,9 @@ shirc_irc_is_registered() {
 
     while read -r -t $shirc_timeout
     do
-        if shirc_is_numeric_message "$REPLY"
+        if shirc_irc_is_numeric_message "$REPLY"
         then
-            mn=$(shirc_print_message_number "$REPLY")
+            mn=$(shirc_irc_print_message_number "$REPLY")
 
             if test "x$listening" == "xno"
             then

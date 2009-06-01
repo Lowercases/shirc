@@ -18,6 +18,7 @@
 #   51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 #
 
-pkgdata_SCRIPTS = shirc.sh callback.sh fifo.sh irc.sh messages.sh state.sh
+pkgdata_SCRIPTS = shirc.sh callback.sh fifo.sh ignore.sh irc.sh messages.sh \
+ 	state.sh
 
 extra_CLEAN = $(pkgdata_SCRIPTS)

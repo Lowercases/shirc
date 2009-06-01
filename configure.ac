@@ -85,6 +85,7 @@ AC_CONFIG_FILES([Makefile
                  src/shirc.sh
                  src/callback.sh
                  src/fifo.sh
+                 src/ignore.sh
                  src/irc.sh
                  src/messages.sh
                  src/state.sh

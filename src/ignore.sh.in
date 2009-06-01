@@ -1,0 +1,98 @@
+#!/bin/bash
+
+#
+#   shirc -- IRC support for shell scripting
+#   Copyright (C) 2009  Ignacio Nin
+#
+#   This program is free software; you can redistribute it and/or modify
+#   it under the terms of the GNU General Public License as published by
+#   the Free Software Foundation; either version 2 of the License, or
+#   (at your option) any later version.
+#
+#   This program is distributed in the hope that it will be useful,
+#   but WITHOUT ANY WARRANTY; without even the implied warranty of
+#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#   GNU General Public License for more details.
+#
+#   You should have received a copy of the GNU General Public License
+#   along with this program; if not, write to the Free Software
+#   Foundation, Inc.,
+#   51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+#
+
+# Ignore list
+shirc_ignorelist=""
+
+#
+# shirc_ignore_add()
+#
+# Adds the nick passed as parameter to the ignore list.
+#
+# Params:
+#   1 -- the nick to ignore
+#
+# Global variables:
+#   shirc_ignore_list -- the global ignore list
+#
+shirc_ignore_add() {
+    local nick
+
+    nick="$1"
+
+    if echo "$shirc_ignorelist" | fgrep -qwi "$nick"
+    then
+        return 1
+    else
+        if test "x$shirc_ignorelist" == "x"
+        then
+            shirc_ignorelist="$nick"
+        else
+            shirc_ignorelist="$shirc_ignorelist $nick"
+        fi
+
+    fi
+
+    return 0
+
+}
+
+#
+# shirc_ignore_del()
+#
+# Removes the nick passed as parameter from the ignore list.
+#
+# Params:
+#   1 -- the nick to unignore
+#
+# Global variables:
+#   shirc_ignore_list -- the global ignore list
+#
+shirc_ignore_del() {
+    local nick
+    local list n
+
+    nick="$1"
+
+    if echo "$shirc_ignorelist" | grep -qwi "$nick"
+    then
+        list="$shirc_ignorelist"
+        shirc_ignorelist=""
+
+        for n in $list
+        do
+            if test "x$n" == "x$nick"
+            then
+                continue
+            fi
+
+            shirc_ignore_add "$n"
+
+        done
+
+    else
+        return 1
+    fi
+
+    return 0
+
+}

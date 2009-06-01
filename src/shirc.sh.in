@@ -20,7 +20,7 @@
 #   51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 #
 
-for auxfile in callback.sh fifo.sh irc.sh messages.sh state.sh
+for auxfile in callback.sh fifo.sh ignore.sh irc.sh messages.sh state.sh
 do
     if test -f "@PKGDATADIR@/$auxfile"
     then
