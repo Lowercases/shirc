@@ -3,6 +3,7 @@
 *.lo
 *.la
 *.sh
+shirc
 Makefile
 Makefile.in
 aclocal.m4
