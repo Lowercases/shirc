@@ -22,7 +22,7 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ(2.61)
-AC_INIT([shirc], [0.0.0], [nachex@gmail.com])
+AC_INIT([shirc], [0.0.1], [nachex@gmail.com])
 AM_INIT_AUTOMAKE([dist-bzip2 no-dist-gzip])
 
 # Checks for programs.
