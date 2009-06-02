@@ -32,7 +32,7 @@ shirc_create_fifos() {
     do
         if ! mkfifo "$shirc_tmp_dir/$fifo"
         then
-            fatal_error "Couldn't create $fifo fifo"
+            shirc_fatal_error "Couldn't create $fifo fifo"
         fi
 
     done

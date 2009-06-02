@@ -277,6 +277,10 @@ shirc_set_quit_message() {
 #   shirc_tmp_dir -- temporary directory for the FIFOs.
 #
 shirc_init() {
+    shirc_notice "Starting shirc initialization"
+
+    shirc_debug "Creating temporary directory"
+
     # Temporary directory creation
     shirc_tmp_dir=$(mktemp -qd "/tmp/$shirc_program_name.XXXXXX")
     if test $? != 0
@@ -285,10 +289,13 @@ shirc_init() {
             "Couldn't create temporary directory for FIFOs at initialize()"
     fi
 
+    shirc_debug "Creating FIFOs"
+
     shirc_create_fifos
 
     shirc_timestamp=$(date +%s)
 
+    shirc_debug "Trapping EXIT to shirc_finalize()"
     trap shirc_finalize EXIT
 
 }
@@ -305,10 +312,17 @@ shirc_init() {
 #   shirc_shirc_tmp_dir -- the temporary directory.
 #
 shirc_finalize() {
+    shirc_notice "Starting shirc termination"
+
+    shirc_debug "Deleting FIFOs"
     shirc_delete_fifos
+
+    shirc_debug "Deleting temporary dir"
 
     # Delete temp dir
     rm -rf $shirc_tmp_dir
+
+    shirc_debug "Exiting"
 
 }
 

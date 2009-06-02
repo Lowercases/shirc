@@ -20,20 +20,36 @@
 #   51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 #
 
-# TODO
+#
+# shirc_connect()
+#
+# Composes the main loop connecting to the IRC server
+#
+# Params:
+#   none.
+#
+# Global variables:
+#   shirc_quitting -- flag to know whether we are quitting
+#
 shirc_connect() {
+    shirc_debug "Starting connect loop"
+
     while true
     do
+        shirc_debug "Calling shirc_irc_connect()"
+
         shirc_irc_connect
+
+        shirc_debug "Back from shirc_irc_connect()"
 
         # Are we quitting?
         # shirc_quitting is set by the irc functions
         if test "x$shirc_quitting" == "xyes"
         then
-            echo "We quitting"
+            shirc_notice "\$shirc_quitting set, quitting"
             break
         else
-            echo "Continuing"
+            shirc_debug "\$shirc_quitting not set, continuing main loop"
             continue
         fi
 
@@ -58,7 +74,7 @@ shirc_irc_connect() {
 
     if test "x$shirc_server" == "x"
     then
-        fatal_error "IRC Server not set"
+        shirc_fatal_error "IRC Server not set"
     else
         server="$shirc_server"
     fi
@@ -70,11 +86,14 @@ shirc_irc_connect() {
         port="$shirc_port"
     fi
 
+    shirc_debug "Starting network process"
     tee lastlogin.in < $shirc_fifo_in |
         $NC $server $port | tee lastlogin.out > $shirc_fifo_out &
 
+    shirc debug "Starting shirc_irc_listener()"
     shirc_irc_listener < $shirc_fifo_out 3> $shirc_fifo_in
 
+    shirc_debug "Returning"
     return 0
 
 }
@@ -92,12 +111,17 @@ shirc_irc_connect() {
 #   none.
 #
 shirc_irc_listener() {
+    shirc_debug "Calling shirc_irc_login()"
     shirc_irc_login
 
+    shirc_debug "Calling shirc_irc_joinchannels()"
     shirc_irc_joinchannels
 
     # Send everything to message parser now
+    shirc_debug "Starting message reader"
     shirc_irc_messagereader
+
+    shirc_debug "Returning"
 
 }
 
@@ -124,35 +148,51 @@ shirc_irc_login() {
     local n secnick
 
     # Read a line containing first
+    shirc_debug "Starting nick fetch"
     while read
     do
+        shirc_debug "Read '$REPLY' - ignoring"
         if echo $REPLY | fgrep -q 'ident'
         then
+            shirc_notice "Ident read"
             break
         fi
     done
 
+    shirc_notice "Logging in to server"
+    shirc_debug "Sending USER command"
     echo "USER $shirc_username $(hostname) $shirc_server :$shirc_realname" \
         >&3
+    shirc_debug "Sending NICK command"
     echo "NICK $irc_nick" >&3
 
+    shirc_debug "Starting wait for welcome message loop"
     # Wait for a welcome message
     while read
     do
         if shirc_irc_is_numeric_message "$REPLY"
         then
+            shirc_debug "Parsing numeric message"
+
             n=$(shirc_irc_print_message_number "$REPLY")
+            shirc_debug "Got message code '$n'"
+
             if test "x$n" == "x001"
             then
                 # Parse server name
                 server_name=$(echo "$REPLY" | cut -d ' ' -f 1 | cut -d ':' -f 2)
+                shirc_debug "Parsed server name '$server_name', breaking loop"
+
                 break
 
             elif test "x$n" == "x433"
             then
+                shirc_notice "Nick in use, switching to secondary nick"
+
                 # Use secondary nick
                 echo "NICK $irc_secondary_nick" >&3
                 secnick="yes"
+
             fi
         fi
 
@@ -161,10 +201,13 @@ shirc_irc_login() {
 
     done
 
+    shirc_debug "Exited from loop, sending USERHOST and WHO commands"
+
     echo "USERHOST $shirc_nick" >&3
     echo "WHO $shirc_nick" >&3
 
     # Wait for end of MOTD
+    shirc_debug "Waiting for end of MOTD"
     while read
     do
         if shirc_irc_is_numeric_message "$REPLY"
@@ -172,6 +215,7 @@ shirc_irc_login() {
             n=$(shirc_irc_print_message_number "$REPLY")
             if test "x$n" == "x376"
             then
+                shirc_debug "Got 376 code, exiting loop"
                 break
             fi
         fi
@@ -180,23 +224,28 @@ shirc_irc_login() {
     # Register to services
     if test "x$shirc_nickserv_password" != "x"
     then
+        shirc_notice "Registering to NickServ"
         echo "PRIVMSG NickServ :IDENTIFY $shirc_nickserv_password" >&3
 
         # Check secondary nick
         if test "x$secnick" == "xyes"
         then
+            shirc_notice "Ghosting primary nick"
             echo "PRIVMSG NickServ :GHOST $shirc_nick" >&3
             # Wait some time
             sleep 3
 
+            shirc_notice "Switching to primary nick"
             echo "NICK $shirc_nick" >&3
 
         fi
 
     fi
 
+    shirc_debug "Setting signal traps to shirc_quit()"
     trap shirc_quit INT TERM
 
+    shirc_debug "Returning"
     return 0
 
 }
@@ -217,6 +266,7 @@ shirc_irc_joinchannels() {
 
     for channel in $irc_channels
     do
+        shirc_debug "Joining '$channel'"
         echo "JOIN $channel" >&3
     done
 
@@ -236,36 +286,50 @@ shirc_irc_joinchannels() {
 #   shirc_quitting -- Flag to know whether we are quitting
 #
 shirc_irc_messagereader() {
+    shirc_debug "Starting irc_messagereader() loop"
+
     while true
     do
+        shirc_debug "Reading a message"
+
         while read -r -t $shirc_timeout
         do
+            shirc_debug "Parsed message, sending to message parser"
             shirc_irc_messageparser "$REPLY"
 
         done
 
+        shirc_debug "read timed out, checking reason"
+
         # Are we quitting? Or is it a timeout?
         if test "x$shirc_quitting" != "xyes"
         then
+            shirc_debug "Pinging server"
+
             # Test ping
             if shirc_irc_ping
             then
+                shirc_debug "Ping returned, restarting loop"
                 # Restart
                 continue
 
             else
+                shirc_warning "Ping did not return, reconnecting"
                 # We have to reconnect.
                 break 2
 
             fi
 
         else
+            shirc_notice "Quitting"
             # We're quitting
             break
 
         fi
 
     done
+
+    shirc_notice "Resetting signal traps"
 
     # Reset original signals
     trap - INT TERM
@@ -307,9 +371,12 @@ shirc_irc_messageparser() {
         # Check the ignore list
         if echo "$shirc_ignorelist" | fgrep -qwi "$source"
         then
+            shirc_debug "Ignoring message from '$source'"
             continue
+
         fi
 
+        shirc_debug "Calling general callback"
         $shirc_general_callback "$source" "$target" "$message"
 
     fi
@@ -376,6 +443,7 @@ shirc_priv_message() {
         msg="${msg:0:510}"
     fi
 
+    shirc_debug "Sending private message '$msg'"
     echo "$msg" >&3
 
 }
@@ -406,6 +474,7 @@ shirc_notice_message() {
         msg="${msg:0:510}"
     fi
 
+    shirc_debug "Sending notice message '$msg'"
     echo "$msg" >&3
 
 }
@@ -427,6 +496,7 @@ shirc_me_action() {
     target="$1"
     message="$2"
 
+    shirc_debug "Sending action message '$message' to '$target'"
     echo -e "PRIVMSG $target :\01ACTION $message\01" >&3
 
 }
@@ -447,6 +517,7 @@ shirc_join_channel() {
 
     channel="$1"
 
+    shirc_debug "Sending JOIN command for '$channel'"
     echo "JOIN $channel" >&3
 
 }
@@ -467,6 +538,7 @@ shirc_leave_channel() {
 
     channel="$1"
 
+    shirc_debug "Sending PART command for '$channel'"
     echo "PART $channel" >&3
 
 }
@@ -486,16 +558,19 @@ shirc_leave_channel() {
 #   shirc_ping_timeout -- Timeout for the read
 #
 shirc_irc_ping() {
+    shirc_debug "Sending PING command"
     echo "PING :$server_name" >&3
 
     if read -t $shirc_ping_timeout
     then
+        shirc_debug "Ping returned, recycling message '$REPLY'"
         # Recycle message
         shirc_irc_messageparser "$REPLY"
 
         return 0
 
     else
+        shirc_debug "Ping timed out"
         # Bad thing, we're out.
         return 1
 
@@ -517,12 +592,17 @@ shirc_irc_ping() {
 #   shirc_quit_message -- Preconfigured quit message
 #
 shirc_quit() {
+    shirc_notice "Resetting signal traps"
+
     # Unset INT and TERM capturing
     trap - INT TERM
+
+    shirc_debug "Setting quit flag"
 
     # Set flag
     shirc_quitting="yes"
 
+    shirc_debug "Sending QUIT command with message '$shirc_quit_message'"
     echo "QUIT :$shirc_quit_message" >&3
 
 }
@@ -553,6 +633,10 @@ shirc_get_names_list() {
 
     channel="$1"
 
+    shirc_debug "Getting names list for '$channel'"
+
+    shirc_debug "Sending NAMES command for '$channel'"
+
     # Send the query
     echo "NAMES :$channel" >&3
 
@@ -564,12 +648,21 @@ shirc_get_names_list() {
     do
         if shirc_irc_is_numeric_message "$REPLY"
         then
+            shirc_debug "Parsing numeric message"
+
             mn=$(shirc_irc_print_message_number "$REPLY")
+
+            shirc_debug "Got message code '$mn'"
+
             # Also test this is the channel
             if echo "$REPLY" | fgrep -qwi "$channel"
             then
+                shirc_debug "Message is for '$channel', checking command"
+
                 if test "x$mn" == "x353"
                 then
+                    shirc_debug "Got 353 message, parsing namelist"
+
                     nl=$(trim "$REPLY" | cut -d ' ' -f 3- | cut -d ':' -f 2)
                     if test "x$fnl" != "x"
                     then
@@ -581,10 +674,14 @@ shirc_get_names_list() {
                     # Reset message count
                     smc="0"
 
+                    shirc_debug "List parsed, continuing loop"
+
                     continue
 
                 elif test "x$mn" == "x366"
                 then
+                    shirc_debug "Got 366 message, ending processing"
+
                     # End of message list
                     echo "$fnl"
                     return 0
@@ -595,10 +692,16 @@ shirc_get_names_list() {
 
         # Increase count
         let smc++
+        shirc_debug "Got unrelated message, increasing count to '$smc'"
+
         if test "x$smc" == "x$shirc_async_wait"
         then
+            shirc_debug "Async max wait exceeded, returning error"
+
             return 1
         fi
+
+        shirc_debug "Recycling message"
 
         # Recycle message
         shirc_irc_messageparser "$REPLY"
@@ -634,6 +737,10 @@ shirc_irc_is_registered() {
 
     nick="$1"
 
+    shirc_debug "Getting whois info for '$nick'"
+
+    shirc_debug "Sending WHOIS command for '$nick'"
+
     # Send the whois query
     echo "WHOIS $nick" >&3
 
@@ -646,15 +753,24 @@ shirc_irc_is_registered() {
     do
         if shirc_irc_is_numeric_message "$REPLY"
         then
+            shirc_debug "Parsing numeric message"
+
             mn=$(shirc_irc_print_message_number "$REPLY")
+
+            shirc_debug "Got message code '$mn'"
 
             if test "x$listening" == "xno"
             then
                 if test "x$mn" == "x311"
                 then
+                    shirc_debug "Got 311 message"
+
                     rnick=$(echo "$REPLY" | cut -d ' ' -f 4)
                     if test "x$rnick" == "x$nick"
                     then
+                        shirc_debug \
+                            "Got appropiate message for this nick, listening"
+
                         listening="yes"
                     fi
 
@@ -668,10 +784,13 @@ shirc_irc_is_registered() {
             # Else, we are waiting for 320 and 318
             elif test "x$mn" == "x320"
             then
+                shirc_debug "Got 320 message, returning info"
+
                 return 0
 
             elif test "x$mn" == "x318"
             then
+                shirc_debug "Got 318 message, returning error"
                 return 1
 
             fi
@@ -680,10 +799,16 @@ shirc_irc_is_registered() {
 
         # Increase count
         let smc++
+        shirc_debug "Got unrelated message, increasing count to '$smc'"
+
         if test "x$smc" == "x$shirc_async_wait"
         then
+            shirc_debug "Async max wait exceeded, returning error"
+
             return 1
         fi
+
+        shirc_debug "Recycling message"
 
         # Recycle message
         shirc_irc_messageparser "$REPLY"
