@@ -90,7 +90,7 @@ shirc_irc_connect() {
     tee lastlogin.in < $shirc_fifo_in |
         $NC $server $port | tee lastlogin.out > $shirc_fifo_out &
 
-    shirc debug "Starting shirc_irc_listener()"
+    shirc_debug "Starting shirc_irc_listener()"
     shirc_irc_listener < $shirc_fifo_out 3> $shirc_fifo_in
 
     shirc_debug "Returning"
@@ -376,7 +376,8 @@ shirc_irc_messageparser() {
 
         fi
 
-        shirc_debug "Calling general callback"
+        shirc_debug \
+            "Calling general callback with '$source', '$target', '$message'"
         $shirc_general_callback "$source" "$target" "$message"
 
     fi
