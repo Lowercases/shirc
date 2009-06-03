@@ -316,7 +316,7 @@ shirc_irc_messagereader() {
             else
                 shirc_warning "Ping did not return, reconnecting"
                 # We have to reconnect.
-                break 2
+                break
 
             fi
 
