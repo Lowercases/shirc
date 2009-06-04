@@ -266,7 +266,7 @@ shirc_irc_joinchannels() {
 
     for channel in $irc_channels
     do
-        shirc_debug "Joining '$channel'"
+        shirc_notice "Joining '$channel'"
         echo "JOIN $channel" >&3
     done
 
