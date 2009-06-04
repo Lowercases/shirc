@@ -24,14 +24,25 @@
 # Message callbacks
 #
 shirc_general_callback=""
+shirc_join_callback=""
 
 #
 # Callback functions
 #
-# Callback functions will accept three parameters:
+# Private message callback functions will accept three parameters:
 #   1 -- Message source
 #   2 -- Message target (if on a channel, it will be the channel)
 #   3 -- Message text
+#
+# Join callback accept two parameters:
+#   1 -- Message source
+#   2 -- Message target (a channel)
+#
+
+#
+# SET functions
+#
+# These functions accept one parameter, which is the callback name.
 #
 
 #
@@ -39,18 +50,28 @@ shirc_general_callback=""
 #
 # This functions sets the callback for which there are no other callbacks set.
 #
-# Params:
-#   1 -- the name of the function
-#
-# Global variables:
-#   shirc_general_callback
-#
 shirc_set_general_callback() {
     local callback
 
     callback="$1"
 
     shirc_general_callback="$callback"
+
+    return 0
+
+}
+
+#
+# shirc_set_join_callback()
+#
+# This functions sets the callback for JOIN events.
+#
+shirc_set_join_callback() {
+    local callback
+
+    callback="$1"
+
+    shirc_join_callback="$callback"
 
     return 0
 
