@@ -53,6 +53,12 @@ shirc_channels=""
 # Quit message
 shirc_quit_message="Shirc quitting"
 
+# Version response
+shirc_version_response=""
+
+# Automatic pong
+shirc_automatic_pong="true"
+
 #
 # shirc_set_*
 #
@@ -264,6 +270,51 @@ shirc_set_quit_message() {
 
 }
 
+#
+# shirc_set_version_response()
+#
+# This function sets up the CTCP VERSION automatic response. See also
+# shirc_set_ctcp_callback()
+#
+# Params:
+#   1 -- the version response
+#
+# Global variables:
+#   shirc_version_response
+#
+shirc_set_version_response() {
+    local version
+
+    version="$1"
+
+    shirc_version_response="$version"
+
+    return 0
+
+}
+
+#
+# shirc_enable_pong()
+# shirc_disable_pong()
+#
+# These functions enable or disable the automatic CTCP PING response, which is
+# enabled by default
+#
+# Params:
+#   none.
+#
+# Global variables:
+#   shirc_automatic_pong -- for setting automating pong
+#
+shirc_enable_pong() {
+    shirc_automatic_pong="true"
+
+}
+
+shirc_disable_pong() {
+    shirc_automatic_pong="false"
+
+}
 
 #
 # shirc_init()

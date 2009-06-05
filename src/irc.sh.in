@@ -360,6 +360,9 @@ shirc_irc_messageparser() {
 
     fmessage="$1"
 
+    # Strip trailing \r
+    fmessage="$(trim "$fmessage")"
+
     # Parse message
     fqn=$(echo "$fmessage" | cut -d ' ' -f 1 | sed 's/^://')
     command=$(echo "$fmessage" | cut -d ' ' -f 2)
@@ -395,9 +398,74 @@ shirc_irc_messageparser() {
 
         fi
 
-        shirc_debug \
-            "Calling general callback with '$source', '$target', '$message'"
-        $shirc_general_callback "$source" "$target" "$message"
+        # Check for CTCP messages
+        if echo "$message" | grep "^$(echo -e '\01').*$(echo -e '\01')$"
+        then
+            shirc_debug "Sending message to CTCP parser"
+            shirc_irc_ctcpparser "$source" "$target" "$message"
+
+        else
+            # Call general parser
+            shirc_debug \
+                "Calling general callback with '$source', '$target', '$message'"
+            $shirc_general_callback "$source" "$target" "$message"
+
+        fi
+
+    fi
+
+}
+
+#
+# shirc_irc_ctcpparser()
+#
+# This function receives a raw CTCP message, parses it, and calls the
+# appropiate callbacks.
+#
+# Params:
+#   1 -- the source
+#   2 -- the target
+#   3 -- the CTCP raw message
+#
+shirc_irc_ctcpparser() {
+    local source target message
+    local cr
+
+    source="$1"
+    target="$2"
+    message="$3"
+
+    # Strip the initial and final \01
+    cr="$(echo -e '\01')"
+
+    message="$(echo "$message" | sed -e "s/^$cr//" -e "s/$cr$//")"
+
+    if test "x$message" == "xVERSION"
+    then
+        shirc_debug "Parsed VERSION ctcp command"
+
+        if test "x$shirc_version_response" != "x"
+        then
+            shirc_debug "Responding '$shirc_version_response'"
+
+            shirc_notice_message \
+                "$source" "${cr}VERSION $shirc_version_response$cr"
+
+        fi
+
+    elif echo "$message" | egrep '^PING [0-9]+$'
+    then
+        shirc_debug "Parsed PING ctcp command"
+
+        if $shirc_automatic_pong
+        then
+            shirc_notice_message \
+                "$source" "$cr$message$cr"
+
+        fi
+
+    else
+        shirc_debug "Unknown CTCP command '$message'"
 
     fi
 
