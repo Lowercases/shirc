@@ -405,6 +405,26 @@ shirc_irc_messageparser() {
             shirc_irc_ctcpparser "$source" "$target" "$message"
 
         else
+            # Check for a callback for a channel
+            local cback
+
+            cback="shirc_channel_callback_$(shirc_normalize_channel "$target")"
+
+            shirc_debug "Testing if exists $cback"
+
+            if test "x${!cback}" != "x"
+            then
+                shirc_debug \
+                    "Calling $target callback with '$source', '$message'"
+
+                if ${!cback} "$source" "$message"
+                then
+                    return 0
+
+                fi
+
+            fi
+
             # Call general parser
             shirc_debug \
                 "Calling general callback with '$source', '$target', '$message'"

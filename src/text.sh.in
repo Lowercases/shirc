@@ -20,18 +20,25 @@
 #   51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 #
 
-# shirc version
-SHIRC_VERSION="@VERSION@"
+#
+# shirc_normalize_channel()
+#
+# This function normalizes a channel name, to make it suitable for storing as
+# a shell variable. In particular, changes '#' and '-' to '_'.
+#
+# Params:
+#   1 -- the channel name
+#
+# Global variables:
+#   none.
+#
+shirc_normalize_channel() {
+    local channel
 
-for auxfile in callback.sh fifo.sh ignore.sh irc.sh messages.sh state.sh text.sh
-do
-    if test -f "@PKGDATADIR@/$auxfile"
-    then
-        . "@PKGDATADIR@/$auxfile"
-    else
-        echo 1>&2 \
-            "$auxfile not found. Please reconfigure/reinstall @PACKAGE_NAME@."
-        exit 1
-    fi
+    channel="$1"
 
-done
+    echo "$channel" | sed 's/[#-]/_/g'
+
+    return 0
+
+}

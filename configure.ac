@@ -89,5 +89,6 @@ AC_CONFIG_FILES([Makefile
                  src/irc.sh
                  src/messages.sh
                  src/state.sh
+                 src/text.sh
                 ])
 AC_OUTPUT

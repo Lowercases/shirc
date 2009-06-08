@@ -76,3 +76,31 @@ shirc_set_join_callback() {
     return 0
 
 }
+
+#
+# shirc_set_channel_callback()
+#
+# This functions sets a callback for a particular channel. This callback does
+# not receive the target of the privmsg, it's assumed to be this channel.
+#
+# Params:
+#   1 -- the channel name
+#   2 -- the callback function
+#
+# Global variables:
+#   shirc_channel_callback_* -- global for setting the channel
+#
+shirc_set_channel_callback() {
+    local channel callback
+
+    channel="$1"
+    callback="$2"
+
+    # Transform the name, to make it suitable for a variable
+    channel="$(shirc_normalize_channel "$channel")"
+
+    eval shirc_channel_callback_$channel="$callback"
+
+    return 0
+
+}

@@ -19,6 +19,6 @@
 #
 
 pkgdata_SCRIPTS = shirc.sh callback.sh fifo.sh ignore.sh irc.sh messages.sh \
- 	state.sh
+ 	state.sh text.sh
 
 extra_CLEAN = $(pkgdata_SCRIPTS)
