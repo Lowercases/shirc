@@ -42,3 +42,23 @@ shirc_normalize_channel() {
     return 0
 
 }
+
+#
+# shirc_trim()
+#
+# Prints a trimmed version of the string it receives as parameter
+#
+# Parameters:
+#   1 -- the string to trim
+#
+# Global variables:
+#   none.
+#
+shirc_trim() {
+    local msg
+
+    msg="$1"
+
+    echo "$msg" | sed -e 's/^ *//' -e 's/[ '$'\r'']*$//'
+
+}
