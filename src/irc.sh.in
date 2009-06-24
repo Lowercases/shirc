@@ -406,7 +406,7 @@ shirc_irc_messageparser() {
         fi
 
         # Check for CTCP messages
-        if echo "$message" | grep "^$(echo -e '\01').*$(echo -e '\01')$"
+        if echo "$message" | grep -q "^$(echo -e '\01').*$(echo -e '\01')$"
         then
             shirc_debug "Sending message to CTCP parser"
             shirc_irc_ctcpparser "$source" "$target" "$message"
