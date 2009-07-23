@@ -64,6 +64,19 @@ VERSIONMSG
 
 }
 
+general_callback() {
+    local source target message
+
+    source="$1"
+    target="$2"
+    message="$3"
+
+    echo "($target) $source: $message"
+
+    return 0
+    
+}
+
 # Initial state
 nick="shircbot"
 
@@ -136,10 +149,16 @@ then
 fi
 
 # Connect
-shirc_set_server "$server"
 if test "x$port" != "x"
 then
-    shirc_set_port "$port"
+    shirc_set_server "$server" "$port"
+else
+    shirc_set_server "$server"
+fi
+
+if test "x$ssl" == "xyes"
+then
+    shirc_set_ssl
 fi
 
 shirc_set_username "shircbot"
@@ -150,6 +169,8 @@ if test "x$channels" != "x"
 then
     shirc_set_channels "$channels"
 fi
+
+shirc_set_general_callback general_callback
 
 shirc_init
 shirc_connect
