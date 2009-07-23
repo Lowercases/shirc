@@ -4,6 +4,7 @@
 *.la
 *.sh
 shirc
+shircbot
 Makefile
 Makefile.in
 aclocal.m4

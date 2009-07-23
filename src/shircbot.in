@@ -1,0 +1,155 @@
+#!/bin/bash
+
+#
+#   shirc -- IRC support for shell scripting
+#   Copyright (C) 2009  Ignacio Nin
+#
+#   This program is free software; you can redistribute it and/or modify
+#   it under the terms of the GNU General Public License as published by
+#   the Free Software Foundation; either version 2 of the License, or
+#   (at your option) any later version.
+#
+#   This program is distributed in the hope that it will be useful,
+#   but WITHOUT ANY WARRANTY; without even the implied warranty of
+#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#   GNU General Public License for more details.
+#
+#   You should have received a copy of the GNU General Public License
+#   along with this program; if not, write to the Free Software
+#   Foundation, Inc.,
+#   51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+#
+
+if test "@PACKAGE_NAME@" == "@""PACKAGE_NAME""@"
+then
+    echo "Configure and install this package to execute this utility."
+    exit 2
+fi
+
+# Load shirc
+if test -f "@PKGDATADIR@/shirc.sh"
+then
+    . "@PKGDATADIR@/shirc.sh"
+else
+    echo 1>&2 \
+        "shirc.sh not found. Please reconfigure/reinstall @PACKAGE_NAME@."
+    exit 3
+
+fi
+
+dump_help() {
+    dump_version
+    cat <<HELPMSG
+Usage:
+    $(basename "$0") [-n nick] [--ssl] [-c channel1 [-c ...]] server[:port]
+
+Options:
+    --help      Shows this message
+    --version   Shows version information
+
+    --nick, -n  Sets the nick
+    --channel, -c   Adds a channel to the join list
+
+    --ssl, -s   Enables an SSL connection
+
+HELPMSG
+
+}
+
+dump_version() {
+    cat <<VERSIONMSG
+@PACKAGE_NAME@ version @VERSION@
+
+VERSIONMSG
+
+}
+
+# Initial state
+nick="shircbot"
+
+go_out=$(getopt --options "hVsnc:" \
+    --longoptions help,version,ssl,nick:,channel: --name @PACKAGE_NAME@ -- $@)
+go_ret=$?
+
+if test $go_ret -ne 0
+then
+    exit 1
+fi
+
+eval set -- $go_out
+
+for arg
+do
+    case $arg in
+    -- )
+        shift
+        break
+        ;;
+    -h | --help )
+        dump_help
+        exit 0;
+        ;;
+    -V | --version )
+        dump_version
+        exit 0
+        ;;
+
+    -s | --ssl )
+        shift
+        ssl="yes"
+        ;;
+
+    -n | --nick )
+        shift
+        nick="$1"
+        shift
+        ;;
+
+    -c | --channel )
+        shift
+        if test "x$channels" == "x"
+        then
+            channels="$1"
+        else
+            channels="$channels $1"
+        fi
+        shift
+        ;;
+        
+    esac
+done
+
+if test $# -ne 1
+then
+    dump_help
+    exit 1
+
+fi
+
+server="$1"
+
+if echo "$server" | egrep -q ':[0-9]+$'
+then
+    port="$(echo "$server" | egrep -o '[0-9]+$')"
+    server="${server%:$port}"
+    
+fi
+
+# Connect
+shirc_set_server "$server"
+if test "x$port" != "x"
+then
+    shirc_set_port "$port"
+fi
+
+shirc_set_username "shircbot"
+shirc_set_realname "shircbot"
+shirc_set_nick "$nick"
+
+if test "x$channels" != "x"
+then
+    shirc_set_channels "$channels"
+fi
+
+shirc_init
+shirc_connect

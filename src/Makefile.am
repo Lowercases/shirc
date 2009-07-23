@@ -18,7 +18,8 @@
 #   51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 #
 
+bin_SCRIPTS = shircbot
 pkgdata_SCRIPTS = shirc.sh callback.sh fifo.sh ignore.sh irc.sh messages.sh \
  	state.sh text.sh
 
-extra_CLEAN = $(pkgdata_SCRIPTS)
+extra_CLEAN = $(pkgdata_SCRIPTS) $(bin_SCRIPTS)

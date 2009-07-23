@@ -90,5 +90,7 @@ AC_CONFIG_FILES([Makefile
                  src/messages.sh
                  src/state.sh
                  src/text.sh
+
+                 src/shircbot
                 ])
 AC_OUTPUT
