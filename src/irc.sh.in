@@ -161,7 +161,7 @@ shirc_irc_login() {
 
     shirc_notice "Logging in to server"
     shirc_debug "Sending USER command"
-    echo "USER $shirc_username $(hostname) $shirc_server :$shirc_realname" \
+    echo "USER $shirc_username $shirc_hostname $shirc_server :$shirc_realname" \
         >&3
     shirc_debug "Sending NICK command"
     echo "NICK $shirc_nick" >&3

@@ -30,6 +30,8 @@ shirc_secondary_nick=""
 shirc_username="shirc"
 shirc_realname="shirc"
 
+shirc_hostname="$(hostname)"
+
 shirc_nickserv_password=""
 
 # Program name, for use in messages, etc.
@@ -148,6 +150,28 @@ shirc_set_realname() {
     realname="$1"
 
     shirc_realname="$realname"
+
+    return 0
+
+}
+
+#
+# shirc_set_hostname()
+#
+# This function sets the hostname to use in IRC.
+#
+# Params:
+#   1 -- the hostname
+#
+# Global variables:
+#   shirc_hostname
+#
+shirc_set_hostname() {
+    local hostname
+
+    hostname="$1"
+
+    shirc_hostname="$hostname"
 
     return 0
 
