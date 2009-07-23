@@ -87,8 +87,18 @@ shirc_irc_connect() {
     fi
 
     shirc_debug "Starting network process"
-    tee lastlogin.in < $shirc_fifo_in |
-        nc $server $port | tee lastlogin.out > $shirc_fifo_out &
+    if test "x$shirc_ssl" == "xyes"
+    then
+        shirc_debug "Using SSL"
+        tee lastlogin.in < $shirc_fifo_in |
+            openssl s_client -quiet -connect "$server:$port" 2>/dev/null |
+                tee lastlogin.out > $shirc_fifo_out &
+
+    else
+        tee lastlogin.in < $shirc_fifo_in |
+            nc $server $port | tee lastlogin.out > $shirc_fifo_out &
+
+    fi
 
     shirc_debug "Starting shirc_irc_listener()"
     shirc_irc_listener < $shirc_fifo_out 3> $shirc_fifo_in
@@ -151,12 +161,12 @@ shirc_irc_login() {
     shirc_debug "Starting nick fetch"
     while read
     do
-        shirc_debug "Read '$REPLY' - ignoring"
-        if echo $REPLY | fgrep -q 'ident'
+        if echo $REPLY | fgrep -qi 'ident'
         then
             shirc_notice "Ident read"
             break
         fi
+        shirc_debug "Read '$REPLY' - ignoring"
     done
 
     shirc_notice "Logging in to server"

@@ -45,6 +45,8 @@ shirc_server=""
 shirc_port="6667"
 shirc_server_name="" # The name of the server is stored here.
 
+shirc_ssl="no" # Whether the server uses SSL
+
 shirc_timeout="10"
 shirc_ping_timeout="10"
 shirc_async_wait="10"
@@ -225,6 +227,23 @@ shirc_set_server() {
         shirc_port="$port"
     fi
 
+    return 0
+
+}
+
+#
+# shirc_set_ssl()
+#
+# This function notifies shirc that the server uses SSL
+#
+# Params:
+#   none.
+#
+# Global variables:
+#   shirc_ssl
+#
+shirc_set_ssl() {
+    shirc_ssl="yes"
     return 0
 
 }
