@@ -395,8 +395,16 @@ shirc_irc_messageparser() {
     fqn=$(echo "$fmessage" | cut -d ' ' -f 1 | sed 's/^://')
     command=$(echo "$fmessage" | cut -d ' ' -f 2)
 
+    # PING messages
+    # PING messages are different to almost everything else, they come without
+    # an fqn, but "PING  :something". "PONG :something" has to be returned.
+    if test "x$fqn" == "xPING"
+    then
+        shirc_debug "PING command received. Returning PONG"
+        shirc_irc_pong "$(echo "$command" | sed 's/^://')"
+
     # Join messages
-    if test "x$command" == "xJOIN"
+    elif test "x$command" == "xJOIN"
     then
         source=$(echo $fqn | cut -d '!' -f 1)
         target=$(echo "$fmessage" | cut -d ' ' -f 3 | sed 's/^://')
@@ -718,6 +726,27 @@ shirc_irc_ping() {
         return 1
 
     fi
+
+}
+
+#
+# shirc_irc_pong()
+#
+# Sends a PONG reply to the server, in order to handle direct PING messages.
+#
+# Params:
+#   1 -- the PONG reply parameter (should be the same as in the PING request).
+#
+# Global variables:
+#    none.
+#
+shirc_irc_pong() {
+    local server
+
+    server="$(trim "$1")"
+
+    shirc_debug "Sending PONG command, parameter '$server'"
+    echo "PONG :$server" >&3
 
 }
 
