@@ -250,6 +250,24 @@ shirc_irc_login() {
 
         fi
 
+        # (Freenode new ircd)
+        # Wait for 396 command
+        shirc_debug "Waiting for 396 message"
+        while read
+        do
+            if shirc_irc_is_numeric_message "$REPLY"
+            then
+                n=$(shirc_irc_print_message_number "$REPLY")
+                if test "x$n" == "x396"
+                then
+                    shirc_debug "Got 396 code, exiting loop"
+                    break
+                else
+                    shirc_debug "Ignoring '$REPLY'"
+                fi
+            fi
+        done
+
     fi
 
     shirc_debug "Setting signal traps to shirc_quit()"
