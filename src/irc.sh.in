@@ -426,6 +426,30 @@ shirc_irc_messageparser() {
 
         fi
 
+    # Nick change messages
+    elif test "x$command" == "xNICK"
+    then
+        source=$(echo $fqn | cut -d '!' -f 1)
+        nick=$(echo "$fmessage" | cut -d ' ' -f 3 | sed 's/^://')
+
+        # Check if it's us
+        if test "x$source" == "x$shirc_nick"
+        then
+            shirc_notice "Changed nick to $nick"
+            shirc_nick="$nick"
+
+        fi
+
+        if test "x$shirc_nick_callback" == "x"
+        then
+            shirc_debug \
+                "Nick callback not set, ignoring NICK '$source' -> '$nick'"
+        else
+            shirc_debug "Calling nick callback with '$source', '$nick'"
+            $shirc_nick_callback "$source" "$nick"
+
+        fi
+
     # Is it a private message?
     elif test "x$command" == "xPRIVMSG"
     then
@@ -684,13 +708,34 @@ shirc_join_channel() {
 # Global variables:
 #   none.
 #
-shirc_leave_channel() {
+shirc_irc_leave_channel() {
     local channel
 
     channel="$1"
 
     shirc_debug "Sending PART command for '$channel'"
     echo "PART $channel" >&3
+
+}
+
+#
+# shirc_irc_change_nick()
+#
+# Changes, asynchrously, the nick. Returns success of failure.
+#
+# Params:
+#   1 -- the new nick
+#
+# Global variables:
+#   irc_nick -- For setting the new nick
+#
+shirc_irc_change_nick() {
+    local nick
+
+    nick="$1"
+
+    shirc_debug "Sending NICK command with argument '$nick'"
+    echo "NICK $nick" >&3
 
 }
 

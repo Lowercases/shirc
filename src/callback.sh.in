@@ -25,6 +25,7 @@
 #
 shirc_general_callback=""
 shirc_join_callback=""
+shirc_nick_callback=""
 
 #
 # Callback functions
@@ -38,6 +39,9 @@ shirc_join_callback=""
 #   1 -- Message source
 #   2 -- Message target (a channel)
 #
+# Nick callback accept one parameter:
+#   1 -- The old nick
+#   2 -- The new nick
 
 #
 # SET functions
@@ -72,6 +76,22 @@ shirc_set_join_callback() {
     callback="$1"
 
     shirc_join_callback="$callback"
+
+    return 0
+
+}
+
+#
+# shirc_set_nick_callback()
+#
+# This function sets the callback for NICK events.
+#
+shirc_set_nick_callback() {
+    local callback
+
+    callback="$1"
+
+    shirc_nick_callback="$callback"
 
     return 0
 
