@@ -1,0 +1,106 @@
+#!/bin/bash
+
+#
+#   shirc -- IRC support for shell scripting
+#   Copyright (C) 2009, 2010  Ignacio Nin
+#
+#   This program is free software; you can redistribute it and/or modify
+#   it under the terms of the GNU General Public License as published by
+#   the Free Software Foundation; either version 2 of the License, or
+#   (at your option) any later version.
+#
+#   This program is distributed in the hope that it will be useful,
+#   but WITHOUT ANY WARRANTY; without even the implied warranty of
+#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#   GNU General Public License for more details.
+#
+#   You should have received a copy of the GNU General Public License
+#   along with this program; if not, write to the Free Software
+#   Foundation, Inc.,
+#   51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+#
+
+#
+# Message callbacks
+#
+shirc_general_callback=""
+shirc_join_callback=""
+
+#
+# Callback functions
+#
+# Private message callback functions will accept three parameters:
+#   1 -- Message source
+#   2 -- Message target (if on a channel, it will be the channel)
+#   3 -- Message text
+#
+# Join callback accept two parameters:
+#   1 -- Message source
+#   2 -- Message target (a channel)
+#
+
+#
+# SET functions
+#
+# These functions accept one parameter, which is the callback name.
+#
+
+#
+# shirc_set_general_callback()
+#
+# This functions sets the callback for which there are no other callbacks set.
+#
+shirc_set_general_callback() {
+    local callback
+
+    callback="$1"
+
+    shirc_general_callback="$callback"
+
+    return 0
+
+}
+
+#
+# shirc_set_join_callback()
+#
+# This functions sets the callback for JOIN events.
+#
+shirc_set_join_callback() {
+    local callback
+
+    callback="$1"
+
+    shirc_join_callback="$callback"
+
+    return 0
+
+}
+
+#
+# shirc_set_channel_callback()
+#
+# This functions sets a callback for a particular channel. This callback does
+# not receive the target of the privmsg, it's assumed to be this channel.
+#
+# Params:
+#   1 -- the channel name
+#   2 -- the callback function
+#
+# Global variables:
+#   shirc_channel_callback_* -- global for setting the channel
+#
+shirc_set_channel_callback() {
+    local channel callback
+
+    channel="$1"
+    callback="$2"
+
+    # Transform the name, to make it suitable for a variable
+    channel="$(shirc_normalize_channel "$channel")"
+
+    eval shirc_channel_callback_$channel="$callback"
+
+    return 0
+
+}

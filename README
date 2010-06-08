@@ -1,0 +1,16 @@
+                                  ~ shirc ~
+
+shirc is a bash "library" for IRC support.
+
+Its purpose is to provide access to IRC servers for shell scripts, making it
+possible to create ircbots (or irc clients, if you will) using the unix shell as
+programming platform.
+
+For connection, it abuses redirection, FIFOs, and shell job handling in an
+unpleasant and awkward, yet pretty much standard way. It uses nc(1) for the net
+communication (bash-specific /dev/tcp was intentionally avoided), the grep(1)
+family for string handling, and tries to pollute only the shirc_* namespace in
+bash.
+
+Please take a look at src/shircbot.in for basic usage sample. Documentation is
+on the way.

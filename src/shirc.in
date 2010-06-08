@@ -1,0 +1,146 @@
+#!/bin/bash
+
+#
+#   shirc -- IRC support for shell scripting
+#   Copyright (C) 2009, 2010  Ignacio Nin
+#
+#   This program is free software; you can redistribute it and/or modify
+#   it under the terms of the GNU General Public License as published by
+#   the Free Software Foundation; either version 2 of the License, or
+#   (at your option) any later version.
+#
+#   This program is distributed in the hope that it will be useful,
+#   but WITHOUT ANY WARRANTY; without even the implied warranty of
+#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#   GNU General Public License for more details.
+#
+#   You should have received a copy of the GNU General Public License
+#   along with this program; if not, write to the Free Software
+#   Foundation, Inc.,
+#   51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+#
+
+if test "@PACKAGE_NAME@" == "@""PACKAGE_NAME""@"
+then
+    echo "Configure and install this package to execute this utility."
+    exit 2
+fi
+
+# Check auxiliar files
+for auxfile in callback.sh fifo.sh irc.sh messages.sh state.sh
+do
+    if test -f "$(dirname "$0")/$auxfile"
+    then
+        # It's ok to have the files in the same dir
+        continue
+
+    elif test -f "@PKGDATADIR@/$auxfile"
+    then
+        continue
+
+    else
+        echo 1>&2 \
+            "$auxfile not found. Please reconfigure/reinstall @PACKAGE_NAME@."
+        exit 1
+
+    fi
+
+done
+
+go_out=$(getopt --options "hV" --longoptions help,version \
+    --name @PACKAGE_NAME@ -- $@)
+go_ret=$?
+
+if [ $go_ret -ne 0 ]
+then
+    exit 1
+fi
+
+set -- $go_out
+
+for arg
+do
+    case $arg in
+    -- )
+        shift
+        break
+        ;;
+
+    -h | --help )
+        cat <<HELPMSG
+@PACKAGE_NAME@ version @VERSION@
+
+Usage:
+    $(basename "$0") [ --help | --version ]
+
+    Use this script without parameters in your own scripts to load shirc
+support. This will output source commands with the appropiate files.
+
+    # Inside your script:
+    \$($0)
+
+    # or, depending on your shell:
+    \`$0\`
+
+Options:
+    --help      Shows this message
+    --version   Shows version information
+
+HELPMSG
+
+        exit 0;
+        ;;
+
+    -V | --version )
+        cat <<VERSIONMSG
+@PACKAGE_NAME@ version @VERSION@
+
+VERSIONMSG
+
+        exit 0
+         ;;
+
+    esac
+
+done
+
+cat <<EOF
+# @PACKAGE_NAME@ version @VERSION@
+#
+#   If you are seeing this message when running your script, it's possible that
+# you forgot to enclose the call in backquotes.
+#   Please check $(basename "$0") --help for details on its use.
+#
+#   Shirc inclusion of IRC support
+#
+
+EOF
+
+# Output include files
+for auxfile in callback.sh fifo.sh irc.sh messages.sh state.sh
+do
+    if test -f "$(dirname "$0")/$auxfile"
+    then
+        # It's ok to have the files in the same dir
+        cat <<EOF
+source "$(dirname "$0")/$auxfile"
+EOF
+
+    elif test -f "@PKGDATADIR@/$auxfile"
+    then
+        cat <<EOF
+source "@PKGDATADIR@/$auxfile"
+EOF
+
+    else
+        echo 1>&2 \
+            "$auxfile not found. Please reconfigure/reinstall @PACKAGE_NAME@."
+        exit 1
+
+    fi
+
+done
+
+cat <<EOF
+
+EOF
